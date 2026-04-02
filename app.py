@@ -63,8 +63,8 @@ with col1:
         html = f"""
         <html>
         <head>
-          <script src="https://unpkg.com/react/umd/react.development.js"></script>
-          <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+          <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+          <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
           <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           <style>
             body {{ font-family: sans-serif; padding: 16px; }}
@@ -76,7 +76,8 @@ with col1:
           <script type="text/babel">
           try {{
             const Component = {jsx_code}
-            ReactDOM.render(<Component />, document.getElementById('root'))
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<Component />);
           }} catch (e) {{
             document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>"
           }}
@@ -94,7 +95,7 @@ with col1:
             scrolling=True
         )
 
-        # Manual refresh (fallback)
+        # Manual refresh fallback
         if st.button("🔄 Refresh Preview"):
             st.rerun()
 
