@@ -8,12 +8,17 @@ JSX_FILE = "current.jsx"
 DB = "comments.db"
 OWNER_PASSWORD = "admin123"  # change this
 
-# --- AUTO REFRESH (safe) ---
-try:
-    from streamlit_autorefresh import st_autorefresh
-    st_autorefresh(interval=2000, key="refresh")
-except:
-    pass
+# --- SESSION STATE INIT ---
+if "uploading" not in st.session_state:
+    st.session_state.uploading = False
+
+# --- AUTO REFRESH (disabled during upload) ---
+if not st.session_state.uploading:
+    try:
+        from streamlit_autorefresh import st_autorefresh
+        st_autorefresh(interval=2000, key="refresh")
+    except:
+        pass
 
 # --- DB SETUP ---
 conn = sqlite3.connect(DB, check_same_thread=False)
@@ -37,18 +42,18 @@ with st.expander("🔒 Owner Upload"):
     pwd = st.text_input("Enter password", type="password")
 
     if pwd == OWNER_PASSWORD:
-        uploaded = st.file_uploader(
-            "Upload JSX",
-            type=["jsx"],
-            key=str(time.time())  # 🔥 fixes caching issue
-        )
+        uploaded = st.file_uploader("Upload JSX", type=["jsx"])  # ✅ NO dynamic key
 
-        if uploaded:
+        if uploaded is not None:
+            st.session_state.uploading = True  # stop refresh
+
             with open(JSX_FILE, "wb") as f:
                 f.write(uploaded.read())
 
             st.success("JSX updated")
             st.write("File size:", os.path.getsize(JSX_FILE))  # debug
+
+            st.session_state.uploading = False  # resume refresh
             st.rerun()
 
     elif pwd:
@@ -65,7 +70,7 @@ with col1:
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
 
-        # 🔍 DEBUG: show first part of JSX (remove later)
+        # Debug (remove later if you want)
         st.code(jsx_code[:300])
 
         html = f"""
@@ -91,7 +96,6 @@ with col1:
           }}
           </script>
 
-          <!-- cache buster -->
           <div style="display:none">{time.time()}</div>
         </body>
         </html>
@@ -103,7 +107,6 @@ with col1:
             scrolling=True
         )
 
-        # Manual refresh fallback
         if st.button("🔄 Refresh Preview"):
             st.rerun()
 
@@ -135,7 +138,7 @@ with col2:
         status = "✅ Resolved" if resolved else "🟡 Open"
 
         with st.container():
-            st.markdown(f"**{status}** — 🕒 {ts}")
+            st.markdown(f"**{status} — 🕒 {ts}**")
             st.write(text)
 
             colA, colB = st.columns(2)
