@@ -2,23 +2,9 @@ import streamlit as st
 import sqlite3
 import os
 from datetime import datetime
-import time
 
 JSX_FILE = "current.jsx"
 DB = "comments.db"
-OWNER_PASSWORD = "admin123"  # change this
-
-# --- SESSION STATE ---
-if "uploading" not in st.session_state:
-    st.session_state.uploading = False
-
-# --- AUTO REFRESH (disabled during upload) ---
-if not st.session_state.uploading:
-    try:
-        from streamlit_autorefresh import st_autorefresh
-        st_autorefresh(interval=2000, key="refresh")
-    except:
-        pass
 
 # --- DB SETUP ---
 conn = sqlite3.connect(DB, check_same_thread=False)
@@ -37,30 +23,6 @@ conn.commit()
 st.set_page_config(layout="wide")
 st.title("UI Preview + Feedback")
 
-# --- OWNER LOGIN + UPLOAD ---
-pwd = st.text_input("Owner Password", type="password")
-
-if pwd == OWNER_PASSWORD:
-    uploaded = st.file_uploader("Upload JSX", type=["jsx"], key="jsx_upload")
-
-    if uploaded is not None:
-        st.session_state.uploading = True
-
-        file_bytes = uploaded.getvalue()
-
-        with open(JSX_FILE, "wb") as f:
-            f.write(file_bytes)
-
-        st.success("JSX updated")
-        st.write("Saved bytes:", len(file_bytes))
-        st.write("Last modified:", os.path.getmtime(JSX_FILE))
-
-        st.session_state.uploading = False
-        st.rerun()
-
-elif pwd:
-    st.error("Wrong password")
-
 # --- LAYOUT ---
 col1, col2 = st.columns([2, 1])
 
@@ -72,16 +34,11 @@ with col1:
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
 
-        # --- 🔥 PROCESS JSX ---
-        clean_jsx = jsx_code
-
-        # remove import lines
+        # --- PROCESS JSX ---
         clean_jsx = "\n".join([
-            line for line in clean_jsx.split("\n")
+            line for line in jsx_code.split("\n")
             if not line.strip().startswith("import")
         ])
-
-        # remove export default
         clean_jsx = clean_jsx.replace("export default", "")
 
         html = f"""
@@ -109,21 +66,16 @@ with col1:
             document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>";
           }}
           </script>
-
-          <div style="display:none">{time.time()}</div>
         </body>
         </html>
         """
 
         st.components.v1.html(html, height=700, scrolling=True)
 
-        if st.button("🔄 Refresh Preview"):
-            st.rerun()
-
     else:
-        st.warning("No JSX file uploaded")
+        st.warning("No JSX file found")
 
-# --- COMMENTS PANEL ---
+# --- COMMENTS ---
 with col2:
     st.subheader("Comments")
 
