@@ -8,9 +8,12 @@ JSX_FILE = "current.jsx"
 DB = "comments.db"
 OWNER_PASSWORD = "admin123"  # change this
 
-# --- AUTO REFRESH ---
-from streamlit_autorefresh import st_autorefresh
-st_autorefresh(interval=2000, key="refresh")
+# --- AUTO REFRESH (safe) ---
+try:
+    from streamlit_autorefresh import st_autorefresh
+    st_autorefresh(interval=2000, key="refresh")
+except:
+    pass
 
 # --- DB SETUP ---
 conn = sqlite3.connect(DB, check_same_thread=False)
@@ -79,6 +82,7 @@ with col1:
           }}
           </script>
 
+          <!-- cache buster -->
           <div style="display:none">{time.time()}</div>
         </body>
         </html>
@@ -87,11 +91,10 @@ with col1:
         st.components.v1.html(
             html,
             height=650,
-            scrolling=True,
-            key=str(time.time())  # force refresh
+            scrolling=True
         )
 
-        # Optional manual refresh (useful fallback)
+        # Manual refresh (fallback)
         if st.button("🔄 Refresh Preview"):
             st.rerun()
 
