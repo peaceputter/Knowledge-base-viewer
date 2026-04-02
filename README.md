@@ -1,2 +1,12 @@
-# Knowledge-base-viewer
-To view the kb file and drop comments via streamlit
+# JSX Preview + Feedback Tool
+
+Internal tool to:
+- Preview JSX components
+- Collect team feedback
+- Mark comments as resolved
+
+## Run locally
+
+```bash
+pip install -r requirements.txt
+streamlit run app.py
