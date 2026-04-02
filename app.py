@@ -37,27 +37,21 @@ conn.commit()
 st.set_page_config(layout="wide")
 st.title("UI Preview + Feedback")
 
-# --- OWNER LOGIN + UPLOAD (OUTSIDE expander for stability) ---
+# --- OWNER LOGIN + UPLOAD ---
 pwd = st.text_input("Owner Password", type="password")
 
 if pwd == OWNER_PASSWORD:
-    uploaded = st.file_uploader(
-        "Upload JSX",
-        type=["jsx"],
-        key="jsx_upload"   # stable key (IMPORTANT)
-    )
+    uploaded = st.file_uploader("Upload JSX", type=["jsx"], key="jsx_upload")
 
     if uploaded is not None:
         st.session_state.uploading = True
 
-        file_bytes = uploaded.getvalue()  # 🔥 FIX
+        file_bytes = uploaded.getvalue()
 
         with open(JSX_FILE, "wb") as f:
             f.write(file_bytes)
 
         st.success("JSX updated")
-
-        # Debug (remove later)
         st.write("Saved bytes:", len(file_bytes))
         st.write("Last modified:", os.path.getmtime(JSX_FILE))
 
@@ -78,8 +72,17 @@ with col1:
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
 
-        # Debug preview (optional)
-        st.code(jsx_code[:300])
+        # --- 🔥 PROCESS JSX ---
+        clean_jsx = jsx_code
+
+        # remove import lines
+        clean_jsx = "\n".join([
+            line for line in clean_jsx.split("\n")
+            if not line.strip().startswith("import")
+        ])
+
+        # remove export default
+        clean_jsx = clean_jsx.replace("export default", "")
 
         html = f"""
         <html>
@@ -96,21 +99,23 @@ with col1:
 
           <script type="text/babel">
           try {{
-            const Component = {jsx_code}
+            const {{ useState, useEffect, useCallback }} = React;
+
+            {clean_jsx}
+
             const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<Component />);
+            root.render(<ArcOpsKB />);
           }} catch (e) {{
-            document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>"
+            document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>";
           }}
           </script>
 
-          <!-- cache buster -->
           <div style="display:none">{time.time()}</div>
         </body>
         </html>
         """
 
-        st.components.v1.html(html, height=650, scrolling=True)
+        st.components.v1.html(html, height=700, scrolling=True)
 
         if st.button("🔄 Refresh Preview"):
             st.rerun()
