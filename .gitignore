@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Streamlit
+.streamlit/
+
+# Database
+comments.db
+
+# OS junk
+.DS_Store
+Thumbs.db
