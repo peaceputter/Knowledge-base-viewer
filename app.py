@@ -8,7 +8,9 @@ DB = "comments.db"
 OWNER_PASSWORD = "admin123"  # change this
 
 # --- AUTO REFRESH ---
-st.experimental_autorefresh(interval=2000, key="refresh")
+from streamlit_autorefresh import st_autorefresh
+
+st_autorefresh(interval=2000, key="refresh")
 
 # --- DB SETUP ---
 conn = sqlite3.connect(DB, check_same_thread=False)
