@@ -37,13 +37,18 @@ with st.expander("🔒 Owner Upload"):
     pwd = st.text_input("Enter password", type="password")
 
     if pwd == OWNER_PASSWORD:
-        uploaded = st.file_uploader("Upload JSX", type=["jsx"])
+        uploaded = st.file_uploader(
+            "Upload JSX",
+            type=["jsx"],
+            key=str(time.time())  # 🔥 fixes caching issue
+        )
 
         if uploaded:
             with open(JSX_FILE, "wb") as f:
                 f.write(uploaded.read())
 
             st.success("JSX updated")
+            st.write("File size:", os.path.getsize(JSX_FILE))  # debug
             st.rerun()
 
     elif pwd:
@@ -59,6 +64,9 @@ with col1:
     if os.path.exists(JSX_FILE):
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
+
+        # 🔍 DEBUG: show first part of JSX (remove later)
+        st.code(jsx_code[:300])
 
         html = f"""
         <html>
