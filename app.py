@@ -8,7 +8,7 @@ JSX_FILE = "current.jsx"
 DB = "comments.db"
 OWNER_PASSWORD = "admin123"  # change this
 
-# --- SESSION STATE INIT ---
+# --- SESSION STATE ---
 if "uploading" not in st.session_state:
     st.session_state.uploading = False
 
@@ -37,27 +37,35 @@ conn.commit()
 st.set_page_config(layout="wide")
 st.title("UI Preview + Feedback")
 
-# --- OWNER UPLOAD ---
-with st.expander("🔒 Owner Upload"):
-    pwd = st.text_input("Enter password", type="password")
+# --- OWNER LOGIN + UPLOAD (OUTSIDE expander for stability) ---
+pwd = st.text_input("Owner Password", type="password")
 
-    if pwd == OWNER_PASSWORD:
-        uploaded = st.file_uploader("Upload JSX", type=["jsx"])  # ✅ NO dynamic key
+if pwd == OWNER_PASSWORD:
+    uploaded = st.file_uploader(
+        "Upload JSX",
+        type=["jsx"],
+        key="jsx_upload"   # stable key (IMPORTANT)
+    )
 
-        if uploaded is not None:
-            st.session_state.uploading = True  # stop refresh
+    if uploaded is not None:
+        st.session_state.uploading = True
 
-            with open(JSX_FILE, "wb") as f:
-                f.write(uploaded.read())
+        file_bytes = uploaded.getvalue()  # 🔥 FIX
 
-            st.success("JSX updated")
-            st.write("File size:", os.path.getsize(JSX_FILE))  # debug
+        with open(JSX_FILE, "wb") as f:
+            f.write(file_bytes)
 
-            st.session_state.uploading = False  # resume refresh
-            st.rerun()
+        st.success("JSX updated")
 
-    elif pwd:
-        st.error("Wrong password")
+        # Debug (remove later)
+        st.write("Saved bytes:", len(file_bytes))
+        st.write("Last modified:", os.path.getmtime(JSX_FILE))
+
+        st.session_state.uploading = False
+        st.rerun()
+
+elif pwd:
+    st.error("Wrong password")
 
 # --- LAYOUT ---
 col1, col2 = st.columns([2, 1])
@@ -70,7 +78,7 @@ with col1:
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
 
-        # Debug (remove later if you want)
+        # Debug preview (optional)
         st.code(jsx_code[:300])
 
         html = f"""
@@ -96,16 +104,13 @@ with col1:
           }}
           </script>
 
+          <!-- cache buster -->
           <div style="display:none">{time.time()}</div>
         </body>
         </html>
         """
 
-        st.components.v1.html(
-            html,
-            height=650,
-            scrolling=True
-        )
+        st.components.v1.html(html, height=650, scrolling=True)
 
         if st.button("🔄 Refresh Preview"):
             st.rerun()
