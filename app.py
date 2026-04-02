@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import os
 from datetime import datetime
+import time
 
 JSX_FILE = "current.jsx"
 DB = "comments.db"
@@ -9,7 +10,6 @@ OWNER_PASSWORD = "admin123"  # change this
 
 # --- AUTO REFRESH ---
 from streamlit_autorefresh import st_autorefresh
-
 st_autorefresh(interval=2000, key="refresh")
 
 # --- DB SETUP ---
@@ -42,6 +42,7 @@ with st.expander("🔒 Owner Upload"):
 
             st.success("JSX updated")
             st.rerun()
+
     elif pwd:
         st.error("Wrong password")
 
@@ -56,41 +57,44 @@ with col1:
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
 
-        import time
+        html = f"""
+        <html>
+        <head>
+          <script src="https://unpkg.com/react/umd/react.development.js"></script>
+          <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+          <style>
+            body {{ font-family: sans-serif; padding: 16px; }}
+          </style>
+        </head>
+        <body>
+          <div id="root"></div>
 
-    html = f"""
-    <html>
-    <head>
-      <script src="https://unpkg.com/react/umd/react.development.js"></script>
-      <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
-      <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-      <style>
-        body {{ font-family: sans-serif; padding: 16px; }}
-      </style>
-    </head>
-    <body>
-      <div id="root"></div>
+          <script type="text/babel">
+          try {{
+            const Component = {jsx_code}
+            ReactDOM.render(<Component />, document.getElementById('root'))
+          }} catch (e) {{
+            document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>"
+          }}
+          </script>
 
-      <script type="text/babel">
-      try {{
-        const Component = {jsx_code}
-        ReactDOM.render(<Component />, document.getElementById('root'))
-      }} catch (e) {{
-        document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>"
-      }}
-      </script>
-
-      <div style="display:none">{time.time()}</div>
-    </body>
-    </html>
-"""
+          <div style="display:none">{time.time()}</div>
+        </body>
+        </html>
+        """
 
         st.components.v1.html(
             html,
             height=650,
             scrolling=True,
-            key=str(time.time())   # ← FORCE refresh
-            )
+            key=str(time.time())  # force refresh
+        )
+
+        # Optional manual refresh (useful fallback)
+        if st.button("🔄 Refresh Preview"):
+            st.rerun()
+
     else:
         st.warning("No JSX file uploaded")
 
@@ -98,7 +102,6 @@ with col1:
 with col2:
     st.subheader("Comments")
 
-    # Add comment
     new_comment = st.text_area("Add feedback")
 
     if st.button("Post Comment"):
@@ -112,7 +115,6 @@ with col2:
 
     st.divider()
 
-    # Fetch comments
     rows = c.execute(
         "SELECT id, text, timestamp, resolved FROM comments ORDER BY id DESC"
     ).fetchall()
@@ -126,7 +128,6 @@ with col2:
 
             colA, colB = st.columns(2)
 
-            # Toggle resolve
             if colA.button(
                 "Resolve" if not resolved else "Unresolve",
                 key=f"resolve_{cid}"
@@ -138,7 +139,6 @@ with col2:
                 conn.commit()
                 st.rerun()
 
-            # Delete
             if colB.button("Delete", key=f"delete_{cid}"):
                 c.execute("DELETE FROM comments WHERE id = ?", (cid,))
                 conn.commit()
