@@ -56,32 +56,41 @@ with col1:
         with open(JSX_FILE, "r") as f:
             jsx_code = f.read()
 
-        html = f"""
-        <html>
-        <head>
-          <script src="https://unpkg.com/react/umd/react.development.js"></script>
-          <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
-          <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-          <style>
-            body {{ font-family: sans-serif; padding: 16px; }}
-          </style>
-        </head>
-        <body>
-          <div id="root"></div>
+        import time
 
-          <script type="text/babel">
-          try {{
-            const Component = {jsx_code}
-            ReactDOM.render(<Component />, document.getElementById('root'))
-          }} catch (e) {{
-            document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>"
-          }}
-          </script>
-        </body>
-        </html>
-        """
+    html = f"""
+    <html>
+    <head>
+      <script src="https://unpkg.com/react/umd/react.development.js"></script>
+      <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+      <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+      <style>
+        body {{ font-family: sans-serif; padding: 16px; }}
+      </style>
+    </head>
+    <body>
+      <div id="root"></div>
 
-        st.components.v1.html(html, height=650, scrolling=True)
+      <script type="text/babel">
+      try {{
+        const Component = {jsx_code}
+        ReactDOM.render(<Component />, document.getElementById('root'))
+      }} catch (e) {{
+        document.body.innerHTML = "<pre style='color:red'>" + e + "</pre>"
+      }}
+      </script>
+
+      <div style="display:none">{time.time()}</div>
+    </body>
+    </html>
+"""
+
+        st.components.v1.html(
+            html,
+            height=650,
+            scrolling=True,
+            key=str(time.time())   # ← FORCE refresh
+            )
     else:
         st.warning("No JSX file uploaded")
 
